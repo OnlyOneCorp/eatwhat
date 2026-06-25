@@ -130,7 +130,10 @@
 const AFFILIATE = {
   amazonTag: "",                       // Amazon Associates tag
   amazonHost: "https://www.amazon.com/s",
-  coupangSearch: "https://www.coupang.com/np/search",
+  // >>> Coupang Partners deep link: applies to ALL "쿠팡" buy buttons site-wide.
+  //     Fixed destination link (not a live per-dish search).
+  coupangPartners: "https://link.coupang.com/a/eRDlxJFtYa",
+  coupangSearch: "https://www.coupang.com/np/search",   // fallback (unused while coupangPartners is set)
   naverSearch: "https://search.shopping.naver.com/search/all",
   // >>> Coupang Eats Partners link: paste ONCE here and it applies to every
   //     "order in" recommendation site-wide. Leave as-is until you have it.
@@ -643,7 +646,7 @@ function buildLinks(dish){
   } else {
     const q=encodeURIComponent(dish.shop.ko.naver);
     const naver=AFFILIATE.naverSearch+"?query="+q;
-    const coupang=dish.shop.ko.coupangUrl?dish.shop.ko.coupangUrl:AFFILIATE.coupangSearch+"?q="+q;
+    const coupang=dish.shop.ko.coupangUrl?dish.shop.ko.coupangUrl:AFFILIATE.coupangPartners;
     if(order) return [{retailer:"쿠팡이츠",url:AFFILIATE.coupangEats,order:true},{retailer:"네이버",url:naver}];
     return [{retailer:"쿠팡",url:coupang},{retailer:"네이버",url:naver}];
   }
