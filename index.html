@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>내일 뭐먹지?</title>
+<style>
+  :root{
+    --bg:#fbfbfd; --surface:#ffffff; --ink:#1d1d1f; --ink-2:#6e6e73;
+    --hair:#e6e6eb; --accent:#ff5630; --accent-press:#e8421f; --accent-tint:#fff1ec;
+    --radius:22px; --radius-sm:14px; --shadow:0 1px 2px rgba(0,0,0,.04), 0 12px 40px rgba(0,0,0,.07);
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,
+           "Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--ink);
+    -webkit-font-smoothing:antialiased;line-height:1.4;display:flex;flex-direction:column;min-height:100vh}
+  a{color:inherit}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  header{position:sticky;top:0;z-index:10;backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);background:rgba(251,251,253,.8);
+    border-bottom:1px solid var(--hair)}
+  .bar{max-width:720px;margin:0 auto;padding:15px 20px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .home{flex:none;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:999px;color:var(--ink);transition:background .2s ease,transform .15s ease}
+  .home:hover{background:#ededf0}
+  .home:active{transform:scale(.94)}
+  .home svg{width:20px;height:25px;display:block}
+  .brand{flex:1;min-width:0;text-align:center;font-size:17px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lang{flex:none;display:flex;gap:2px;background:#ededf0;border-radius:999px;padding:3px}
+  .lang button{font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;color:var(--ink-2);transition:all .2s ease}
+  .lang button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  main{flex:1;max-width:720px;margin:0 auto;width:100%;padding:52px 22px 56px;text-align:center}
+  .hero h1{font-size:clamp(38px,8.5vw,60px);font-weight:700;letter-spacing:-.03em;line-height:1.02}
+  .hero p{margin-top:16px;font-size:clamp(15px,3.4vw,18px);color:var(--ink-2);max-width:30ch;margin-inline:auto}
+  .surprise-wrap{margin-top:42px}
+  .surprise{font-size:18px;font-weight:600;color:#fff;background:var(--accent);padding:18px 34px;border-radius:999px;
+    box-shadow:0 8px 24px rgba(255,86,48,.32);transition:transform .15s ease, background .2s ease}
+  .surprise:hover{background:var(--accent-press)}
+  .surprise:active{transform:scale(.96)}
+  .surprise .dice{margin-right:8px}
+  .or{display:flex;align-items:center;gap:14px;color:var(--ink-2);font-size:13px;margin:34px auto 0;max-width:360px}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--hair)}
+  .panel{margin-top:26px;background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:34px 26px;text-align:center}
+  .dots{display:flex;justify-content:center;gap:8px;margin-bottom:26px}
+  .dots span{width:7px;height:7px;border-radius:50%;background:var(--hair);transition:all .3s ease}
+  .dots span.done{background:var(--accent)}
+  .dots span.now{background:var(--accent);transform:scale(1.5)}
+  .step-label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+  .question{font-size:clamp(22px,5vw,28px);font-weight:600;letter-spacing:-.02em;margin:10px auto 28px;max-width:18ch}
+  .options{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+  .opt{font-size:16px;font-weight:600;color:var(--ink);background:var(--bg);border:1px solid var(--hair);
+    border-radius:var(--radius-sm);padding:16px 22px;min-width:96px;transition:all .15s ease}
+  .opt:hover{border-color:var(--accent);color:var(--accent)}
+  .opt:active{transform:scale(.96)}
+  .opt.ox{font-size:24px;min-width:84px}
+  .back{margin-top:24px;font-size:14px;font-weight:500;color:var(--ink-2)}
+  .back:hover{color:var(--ink)}
+  .reveal{animation:rise .5s cubic-bezier(.2,.8,.2,1)}
+  @keyframes rise{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+  .dish-emoji{font-size:72px;line-height:1}
+  .result-kicker{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-top:12px}
+  .dish-name{font-size:clamp(28px,6vw,38px);font-weight:700;letter-spacing:-.02em;margin-top:6px}
+  .dish-desc{font-size:16px;color:var(--ink-2);margin:12px auto 0;max-width:34ch}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+  .chip{font-size:12px;font-weight:600;color:var(--ink-2);background:var(--bg);border:1px solid var(--hair);border-radius:999px;padding:6px 12px}
+  .shop{margin-top:28px;border-top:1px solid var(--hair);padding-top:24px}
+  .shop-title{font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--ink-2);margin-bottom:14px}
+  .shop-links{display:flex;flex-direction:column;gap:10px}
+  .aff-note{font-size:11px;color:var(--ink-2);margin-top:12px;opacity:.85}
+  .shop-link{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--hair);
+    border-radius:var(--radius-sm);padding:15px 18px;font-size:15px;font-weight:600;text-decoration:none;transition:all .15s ease}
+  .shop-link:hover{border-color:var(--accent);background:var(--accent-tint)}
+  .shop-link .go{color:var(--accent);font-weight:700}
+  .result-actions{display:flex;gap:10px;justify-content:center;margin-top:26px;flex-wrap:wrap}
+  .btn-ghost{font-size:15px;font-weight:600;color:var(--ink);background:var(--bg);border:1px solid var(--hair);
+    border-radius:999px;padding:13px 22px;transition:all .15s ease}
+  .btn-ghost:hover{border-color:var(--ink-2)}
+  .btn-ghost:active{transform:scale(.96)}
+  footer{max-width:720px;margin:0 auto;width:100%;padding:26px 22px 40px;text-align:center}
+  footer p{font-size:12px;color:var(--ink-2);line-height:1.6;max-width:52ch;margin-inline:auto}
+  .footer-contact{margin-top:10px}
+  .footer-contact a{font-size:12px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--hair);padding-bottom:1px}
+  .footer-contact a:hover{color:var(--accent);border-color:var(--accent)}
+  @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <a class="home" id="home" href="https://main.onlyonecorpceo.workers.dev/" target="_blank" rel="noopener" title="OnlyOne" aria-label="OnlyOne home">
+        <svg viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="12" cy="8.5" r="5" stroke="currentColor" stroke-width="3.2"/>
+          <line x1="12" y1="14" x2="12" y2="22" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/>
+        </svg>
+      </a>
+      <div class="brand" data-t="brand">What's for tomorrow?</div>
+      <div class="lang" role="group" aria-label="Language">
+        <button id="lang-en" aria-pressed="true">EN</button>
+        <button id="lang-ko" aria-pressed="false">한국어</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1 data-t="heroTitle">Can't decide? We've got you.</h1>
+      <p data-t="heroSub">One tap for a random pick — or a few quick taps to narrow it down.</p>
+    </section>
+
+    <div class="surprise-wrap">
+      <button class="surprise" id="surprise"><span class="dice">🎲</span><span data-t="surprise">Surprise me</span></button>
+    </div>
+
+    <div class="or"><span data-t="orPick">or answer 3 quick questions</span></div>
+
+    <div class="panel" id="panel"></div>
+  </main>
+
+  <footer>
+    <p data-t="disclosure">As an Amazon Associate and affiliate partner, this site earns from qualifying purchases. Recommendations may include affiliate links.</p>
+    <div class="footer-contact"><a id="contact" href="#" data-t="contact">Contact</a></div>
+  </footer>
+
+<script>
+/* ============================================================================
+   1) AFFILIATE CONFIG  —  paste your IDs here
+   ============================================================================ */
+const AFFILIATE = {
+  amazonTag: "",                       // Amazon Associates tag
+  amazonHost: "https://www.amazon.com/s",
+  coupangSearch: "https://www.coupang.com/np/search",
+  naverSearch: "https://search.shopping.naver.com/search/all",
+  // >>> Coupang Eats Partners link: paste ONCE here and it applies to every
+  //     "order in" recommendation site-wide. Leave as-is until you have it.
+  coupangEats: "https://www.coupangeats.com",
+};
+
+/* ============================================================================
+   2) DISHES  (126 entries — add more anytime, same shape)
+   ============================================================================ */
+const DISHES = [
+  { id:"tteokbokki", emoji:"🌶️", spicy:true, noodle:false, price:1, baby:false, family:true,
+    name:{en:'Tteokbokki', ko:"떡볶이"}, desc:{en:'Chewy rice cakes in sweet-spicy sauce.', ko:"쫄깃한 떡과 달콤매콤한 소스."},
+    shop:{ en:{query:'tteokbokki kit'}, ko:{naver:"떡볶이 밀키트", coupangUrl:""} } },
+  { id:"kimchijjigae", emoji:"🍲", spicy:true, noodle:false, price:1, baby:false, family:true,
+    name:{en:'Kimchi Stew', ko:"김치찌개"}, desc:{en:'Bubbling kimchi stew with pork and tofu.', ko:"돼지고기와 두부가 든 김치찌개."},
+    shop:{ en:{query:'kimchi stew kit'}, ko:{naver:"김치찌개 밀키트", coupangUrl:""} } },
+  { id:"doenjang", emoji:"🥘", spicy:false, noodle:false, price:1, baby:true, family:true,
+    name:{en:'Doenjang Stew', ko:"된장찌개"}, desc:{en:'Hearty soybean paste stew.', ko:"구수한 된장찌개."},
+    shop:{ en:{query:'doenjang soybean paste'}, ko:{naver:"된장찌개 재료", coupangUrl:""} } },
+  { id:"sundubu", emoji:"🍲", spicy:true, noodle:false, price:1, baby:false, family:true,
+    name:{en:'Soft Tofu Stew', ko:"순두부찌개"}, desc:{en:'Silky tofu in a spicy broth.', ko:"부드러운 순두부찌개."},
+    shop:{ en:{query:'sundubu stew kit'}, ko:{naver:"순두부찌개 밀키트", coupangUrl:""} } },
+  { id:"budaejjigae", emoji:"🍲", spicy:true, noodle:true, price:2, baby:false, family:true,
+    name:{en:'Army Stew', ko:"부대찌개"}, desc:{en:'Sausage, ham and ramen in spicy broth.', ko:"햄·소시지·라면 든 부대찌개."},
+    shop:{ en:{query:'budae jjigae kit'}, ko:{naver:"부대찌개 밀키트", coupangUrl:""} } },
+  { id:"mapotofu", emoji:"🥘", spicy:true, noodle:false, price:1, baby:false, family:false,
+    name:{en:'Mapo Tofu', ko:"마파두부"}, desc:{en:'Silky tofu in numbing chili sauce.', ko:"얼얼하게 매운 마파두부."},
+    shop:{ en:{query:'mapo tofu sauce'}, ko:{naver:"마파두부 소스", coupangUrl:""} } },
+  { id:"jjamppong", emoji:"🍜", spicy:true, noodle:true, price:1, baby:false, family:false,
+    name:{en:'Jjamppong', ko:"짬뽕"}, desc:{en:'Spicy seafood noodle soup.', ko:"얼큰한 해물 짬뽕."},
+    shop:{ en:{query:'jjamppong noodle kit'}, ko:{naver:"짬뽕 밀키트", coupangUrl:""} } },
+  { id:"jjajang", emoji:"🍜", spicy:false, noodle:true, price:1, baby:true, family:true,
+    name:{en:'Jjajangmyeon', ko:"짜장면"}, desc:{en:'Noodles in savory black bean sauce.', ko:"고소한 짜장면."},
+    shop:{ en:{query:'jjajangmyeon kit'}, ko:{naver:"짜장면 밀키트", coupangUrl:""} } },
+  { id:"bibimbap", emoji:"🍚", spicy:false, noodle:false, price:2, baby:true, family:true,
+    name:{en:'Bibimbap', ko:"비빔밥"}, desc:{en:'Rice bowl with veggies, egg and beef.', ko:"채소·계란·고기 비빔밥."},
+    shop:{ en:{query:'bibimbap gochujang sauce'}, ko:{naver:"비빔밥 재료", coupangUrl:""} } },
+  { id:"dolsotbibimbap", emoji:"🍚", spicy:false, noodle:false, price:2, baby:true, family:false,
+    name:{en:'Hot Stone Bibimbap', ko:"돌솥비빔밥"}, desc:{en:'Sizzling bibimbap with crispy rice.', ko:"누룽지까지 생기는 돌솥비빔밥."},
+    shop:{ en:{query:'dolsot bibimbap bowl'}, ko:{naver:"돌솥비빔밥", coupangUrl:""} } },
+  { id:"japchae", emoji:"🍝", spicy:false, noodle:true, price:2, baby:true, family:true,
+    name:{en:'Japchae', ko:"잡채"}, desc:{en:'Glass noodles stir-fried with veggies.', ko:"채소 볶은 당면 잡채."},
+    shop:{ en:{query:'korean glass noodles japchae'}, ko:{naver:"잡채 재료", coupangUrl:""} } },
+  { id:"bulgogi", emoji:"🥩", spicy:false, noodle:false, price:2, baby:true, family:true,
+    name:{en:'Bulgogi', ko:"불고기"}, desc:{en:'Sweet marinated grilled beef.', ko:"달콤하게 재운 불고기."},
+    shop:{ en:{query:'bulgogi marinated beef'}, ko:{naver:"불고기 밀키트", coupangUrl:""} } },
+  { id:"samgyeopsal", emoji:"🥓", spicy:false, noodle:false, price:3, baby:true, family:true,
+    name:{en:'Samgyeopsal', ko:"삼겹살"}, desc:{en:'Grilled pork belly for the table.', ko:"다 함께 굽는 삼겹살."},
+    shop:{ en:{query:'pork belly bbq'}, ko:{naver:"삼겹살", coupangUrl:""} } },
+  { id:"galbi", emoji:"🍖", spicy:false, noodle:false, price:3, baby:true, family:true,
+    name:{en:'Galbi', ko:"갈비"}, desc:{en:'Marinated grilled short ribs.', ko:"달콤한 양념 갈비."},
+    shop:{ en:{query:'kalbi marinated short ribs'}, ko:{naver:"양념갈비", coupangUrl:""} } },
+  { id:"dakgalbi", emoji:"🍗", spicy:true, noodle:false, price:2, baby:false, family:true,
+    name:{en:'Dak-galbi', ko:"닭갈비"}, desc:{en:'Spicy stir-fried chicken.', ko:"매콤한 닭갈비."},
+    shop:{ en:{query:'dakgalbi sauce kit'}, ko:{naver:"닭갈비 밀키트", coupangUrl:""} } },
+  { id:"jjimdak", emoji:"🍗", spicy:false, noodle:true, price:2, baby:true, family:true,
+    name:{en:'Jjimdak', ko:"찜닭"}, desc:{en:'Braised chicken with glass noodles.', ko:"간장 베이스 찜닭."},
+    shop:{ en:{query:'jjimdak sauce'}, ko:{naver:"찜닭 밀키트", coupangUrl:""} } },
+  { id:"kimbap", emoji:"🍙", spicy:false, noodle:false, price:1, baby:true, family:true,
+    name:{en:'Kimbap', ko:"김밥"}, desc:{en:'Seaweed rice rolls, easy and kid-safe.', ko:"아이도 좋아하는 김밥."},
+    shop:{ en:{query:'kimbap kit seaweed rice'}, ko:{naver:"김밥 재료", coupangUrl:""} } },
+  { id:"naengmyeon", emoji:"🥢", spicy:false, noodle:true, price:1, baby:true, family:false,
+    name:{en:'Naengmyeon', ko:"물냉면"}, desc:{en:'Cold chewy noodles in icy broth.', ko:"시원한 물냉면."},
+    shop:{ en:{query:'naengmyeon cold noodles'}, ko:{naver:"물냉면 밀키트", coupangUrl:""} } },
+  { id:"bibimnaengmyeon", emoji:"🌶️", spicy:true, noodle:true, price:1, baby:false, family:false,
+    name:{en:'Spicy Cold Noodles', ko:"비빔냉면"}, desc:{en:'Chewy noodles in spicy sauce.', ko:"매콤한 비빔냉면."},
+    shop:{ en:{query:'bibim naengmyeon kit'}, ko:{naver:"비빔냉면 밀키트", coupangUrl:""} } },
+  { id:"kalguksu", emoji:"🍜", spicy:false, noodle:true, price:1, baby:true, family:true,
+    name:{en:'Kalguksu', ko:"칼국수"}, desc:{en:'Hand-cut noodles in warm broth.', ko:"따뜻한 칼국수."},
+    shop:{ en:{query:'kalguksu noodle kit'}, ko:{naver:"칼국수 밀키트", coupangUrl:""} } },
+  { id:"sujebi", emoji:"🍲", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Sujebi', ko:"수제비"}, desc:{en:'Hand-torn dough flakes in broth.', ko:"쫄깃한 수제비."},
+    shop:{ en:{query:'sujebi dough kit'}, ko:{naver:"수제비 밀키트", coupangUrl:""} } },
+  { id:"ramyeon", emoji:"🍜", spicy:true, noodle:true, price:1, baby:false, family:false,
+    name:{en:'Ramyeon', ko:"라면"}, desc:{en:'Quick spicy instant noodles.', ko:"간편한 매운 라면."},
+    shop:{ en:{query:'korean ramyeon noodles'}, ko:{naver:"라면", coupangUrl:""} } },
+  { id:"kongguksu", emoji:"🥣", spicy:false, noodle:true, price:1, baby:true, family:false,
+    name:{en:'Kongguksu', ko:"콩국수"}, desc:{en:'Noodles in chilled soybean soup.', ko:"고소한 콩국수."},
+    shop:{ en:{query:'kongguksu soy noodle'}, ko:{naver:"콩국수 밀키트", coupangUrl:""} } },
+  { id:"samgyetang", emoji:"🍲", spicy:false, noodle:false, price:3, baby:true, family:true,
+    name:{en:'Ginseng Chicken Soup', ko:"삼계탕"}, desc:{en:'Whole chicken soup with ginseng.', ko:"보양식 삼계탕."},
+    shop:{ en:{query:'samgyetang ginseng chicken'}, ko:{naver:"삼계탕", coupangUrl:""} } },
+  { id:"seolleongtang", emoji:"🍲", spicy:false, noodle:false, price:2, baby:true, family:false,
+    name:{en:'Ox Bone Soup', ko:"설렁탕"}, desc:{en:'Milky slow-simmered beef soup.', ko:"뽀얀 설렁탕."},
+    shop:{ en:{query:'seolleongtang beef soup'}, ko:{naver:"설렁탕", coupangUrl:""} } },
+  { id:"galbitang", emoji:"🍲", spicy:false, noodle:false, price:2, baby:true, family:true,
+    name:{en:'Short Rib Soup', ko:"갈비탕"}, desc:{en:'Clear beef short rib soup.', ko:"깔끔한 갈비탕."},
+    shop:{ en:{query:'galbitang short rib soup'}, ko:{naver:"갈비탕", coupangUrl:""} } },
+  { id:"yukgaejang", emoji:"🍲", spicy:true, noodle:false, price:2, baby:false, family:true,
+    name:{en:'Yukgaejang', ko:"육개장"}, desc:{en:'Spicy shredded beef soup.', ko:"얼큰한 육개장."},
+    shop:{ en:{query:'yukgaejang spicy beef soup'}, ko:{naver:"육개장 밀키트", coupangUrl:""} } },
+  { id:"gamjatang", emoji:"🍲", spicy:true, noodle:false, price:2, baby:false, family:true,
+    name:{en:'Pork Bone Stew', ko:"감자탕"}, desc:{en:'Spicy pork spine and potato stew.', ko:"얼큰한 감자탕."},
+    shop:{ en:{query:'gamjatang pork bone'}, ko:{naver:"감자탕 밀키트", coupangUrl:""} } },
+  { id:"tteokguk", emoji:"🥣", spicy:false, noodle:false, price:1, baby:true, family:true,
+    name:{en:'Rice Cake Soup', ko:"떡국"}, desc:{en:'Sliced rice cakes in clear broth.', ko:"담백한 떡국."},
+    shop:{ en:{query:'tteokguk rice cake soup'}, ko:{naver:"떡국떡", coupangUrl:""} } },
+  { id:"manduguk", emoji:"🥟", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Dumpling Soup', ko:"만둣국"}, desc:{en:'Dumplings in warm broth.', ko:"든든한 만둣국."},
+    shop:{ en:{query:'mandu dumpling soup'}, ko:{naver:"만두", coupangUrl:""} } },
+  { id:"mandu", emoji:"🥟", spicy:false, noodle:false, price:1, baby:true, family:true,
+    name:{en:'Mandu', ko:"만두"}, desc:{en:'Steamed or fried dumplings.', ko:"쫄깃한 만두."},
+    shop:{ en:{query:'korean mandu dumplings'}, ko:{naver:"만두", coupangUrl:""} } },
+  { id:"kimchijeon", emoji:"🥞", spicy:true, noodle:false, price:1, baby:false, family:false,
+    name:{en:'Kimchi Pancake', ko:"김치전"}, desc:{en:'Crispy kimchi pancake.', ko:"바삭한 김치전."},
+    shop:{ en:{query:'kimchi pancake mix'}, ko:{naver:"김치전 부침가루", coupangUrl:""} } },
+  { id:"pajeon", emoji:"🥞", spicy:false, noodle:false, price:1, baby:true, family:true,
+    name:{en:'Green Onion Pancake', ko:"파전"}, desc:{en:'Savory scallion pancake.', ko:"고소한 파전."},
+    shop:{ en:{query:'pajeon pancake mix'}, ko:{naver:"해물파전 밀키트", coupangUrl:""} } },
+  { id:"bossam", emoji:"🍖", spicy:false, noodle:false, price:3, baby:true, family:true,
+    name:{en:'Bossam', ko:"보쌈"}, desc:{en:'Boiled pork wraps with kimchi.', ko:"수육 보쌈."},
+    shop:{ en:{query:'bossam pork wrap'}, ko:{naver:"보쌈", coupangUrl:""} } },
+  { id:"jokbal", emoji:"🍖", spicy:false, noodle:false, price:3, baby:true, family:true,
+    name:{en:'Jokbal', ko:"족발"}, desc:{en:"Braised pig's trotters.", ko:"쫄깃한 족발."},
+    shop:{ en:{query:'jokbal braised pork'}, ko:{naver:"족발", coupangUrl:""} } },
+  { id:"jeyukbokkeum", emoji:"🌶️", spicy:true, noodle:false, price:2, baby:false, family:true,
+    name:{en:'Spicy Pork Stir-fry', ko:"제육볶음"}, desc:{en:'Spicy stir-fried pork.', ko:"매콤한 제육볶음."},
+    shop:{ en:{query:'jeyuk bokkeum sauce'}, ko:{naver:"제육볶음 밀키트", coupangUrl:""} } },
+  { id:"kimchifriedrice", emoji:"🍚", spicy:true, noodle:false, price:1, baby:false, family:false,
+    name:{en:'Kimchi Fried Rice', ko:"김치볶음밥"}, desc:{en:'Fried rice with kimchi.', ko:"매콤한 김치볶음밥."},
+    shop:{ en:{query:'kimchi fried rice'}, ko:{naver:"김치볶음밥 재료", coupangUrl:""} } },
+  { id:"omurice", emoji:"🍳", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Omurice', ko:"오므라이스"}, desc:{en:'Omelette over ketchup rice.', ko:"부드러운 오므라이스."},
+    shop:{ en:{query:'omurice kit'}, ko:{naver:"오므라이스 재료", coupangUrl:""} } },
+  { id:"donkatsu", emoji:"🍖", spicy:false, noodle:false, price:2, baby:true, family:false,
+    name:{en:'Pork Cutlet', ko:"돈까스"}, desc:{en:'Crispy breaded pork cutlet.', ko:"바삭한 돈까스."},
+    shop:{ en:{query:'tonkatsu pork cutlet'}, ko:{naver:"돈까스", coupangUrl:""} } },
+  { id:"yangnyeomchicken", emoji:"🍗", spicy:true, noodle:false, price:2, baby:false, family:true,
+    name:{en:'Yangnyeom Chicken', ko:"양념치킨"}, desc:{en:'Sweet-spicy glazed fried chicken.', ko:"매콤달콤 양념치킨."},
+    shop:{ en:{query:'korean yangnyeom chicken'}, ko:{naver:"양념치킨", coupangUrl:""} } },
+  { id:"friedchicken", emoji:"🍗", spicy:false, noodle:false, price:2, baby:true, family:true,
+    name:{en:'Fried Chicken', ko:"후라이드치킨"}, desc:{en:'Crispy Korean fried chicken.', ko:"바삭한 후라이드 치킨."},
+    shop:{ en:{query:'korean fried chicken mix'}, ko:{naver:"후라이드 치킨", coupangUrl:""} } },
+  { id:"dakdoritang", emoji:"🍗", spicy:true, noodle:false, price:2, baby:false, family:true,
+    name:{en:'Spicy Chicken Stew', ko:"닭볶음탕"}, desc:{en:'Spicy braised chicken and potato.', ko:"얼큰한 닭볶음탕."},
+    shop:{ en:{query:'dakbokkeumtang sauce'}, ko:{naver:"닭볶음탕 밀키트", coupangUrl:""} } },
+  { id:"sundae", emoji:"🌭", spicy:false, noodle:false, price:1, baby:false, family:false,
+    name:{en:'Sundae', ko:"순대"}, desc:{en:'Korean blood sausage.', ko:"쫄깃한 순대."},
+    shop:{ en:{query:'korean sundae sausage'}, ko:{naver:"순대", coupangUrl:""} } },
+  { id:"hotteok", emoji:"🥮", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Hotteok', ko:"호떡"}, desc:{en:'Sweet syrup-filled pancake.', ko:"달콤한 호떡."},
+    shop:{ en:{query:'hotteok mix'}, ko:{naver:"호떡 믹스", coupangUrl:""} } },
+  { id:"bibimguksu", emoji:"🌶️", spicy:true, noodle:true, price:1, baby:false, family:false,
+    name:{en:'Spicy Mixed Noodles', ko:"비빔국수"}, desc:{en:'Cold noodles in spicy sauce.', ko:"새콤매콤 비빔국수."},
+    shop:{ en:{query:'bibim guksu kit'}, ko:{naver:"비빔국수 밀키트", coupangUrl:""} } },
+  { id:"kongnamulgukbap", emoji:"🥣", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Bean Sprout Soup Rice', ko:"콩나물국밥"}, desc:{en:'Light bean sprout soup over rice.', ko:"시원한 콩나물국밥."},
+    shop:{ en:{query:'kongnamul soup rice'}, ko:{naver:"콩나물국밥 밀키트", coupangUrl:""} } },
+  { id:"haejangguk", emoji:"🍲", spicy:true, noodle:false, price:2, baby:false, family:false,
+    name:{en:'Hangover Soup', ko:"해장국"}, desc:{en:'Spicy soup to cure a hangover.', ko:"얼큰한 해장국."},
+    shop:{ en:{query:'haejangguk kit'}, ko:{naver:"해장국 밀키트", coupangUrl:""} } },
+  { id:"ojingeobokkeum", emoji:"🌶️", spicy:true, noodle:false, price:2, baby:false, family:true,
+    name:{en:'Spicy Squid Stir-fry', ko:"오징어볶음"}, desc:{en:'Spicy stir-fried squid.', ko:"매콤한 오징어볶음."},
+    shop:{ en:{query:'ojingeo bokkeum sauce'}, ko:{naver:"오징어볶음 밀키트", coupangUrl:""} } },
+  { id:"gyeranjjim", emoji:"🍳", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Steamed Egg', ko:"계란찜"}, desc:{en:'Fluffy steamed egg.', ko:"폭신한 계란찜."},
+    shop:{ en:{query:'gyeranjjim egg'}, ko:{naver:"계란", coupangUrl:""} } },
+  { id:"sushi", emoji:"🍣", spicy:false, noodle:false, price:3, baby:true, family:true,
+    name:{en:'Sushi', ko:"초밥"}, desc:{en:'Fresh fish over vinegared rice.', ko:"신선한 초밥."},
+    shop:{ en:{query:'sushi making kit'}, ko:{naver:"초밥 세트", coupangUrl:""} } },
+  { id:"sashimi", emoji:"🐟", spicy:false, noodle:false, price:3, baby:true, family:true,
+    name:{en:'Sashimi', ko:"회"}, desc:{en:'Sliced raw fish.', ko:"싱싱한 회."},
+    shop:{ en:{query:'sashimi platter'}, ko:{naver:"모둠회", coupangUrl:""} } },
+  { id:"shoyuramen", emoji:"🍜", spicy:false, noodle:true, price:2, baby:true, family:false,
+    name:{en:'Shoyu Ramen', ko:"쇼유라멘"}, desc:{en:'Soy-based Japanese ramen.', ko:"담백한 쇼유라멘."},
+    shop:{ en:{query:'shoyu ramen kit'}, ko:{naver:"라멘 밀키트", coupangUrl:""} } },
+  { id:"misoramen", emoji:"🍜", spicy:false, noodle:true, price:2, baby:true, family:false,
+    name:{en:'Miso Ramen', ko:"미소라멘"}, desc:{en:'Rich miso ramen.', ko:"진한 미소라멘."},
+    shop:{ en:{query:'miso ramen kit'}, ko:{naver:"미소라멘 밀키트", coupangUrl:""} } },
+  { id:"tonkotsuramen", emoji:"🍜", spicy:false, noodle:true, price:2, baby:true, family:false,
+    name:{en:'Tonkotsu Ramen', ko:"돈코츠라멘"}, desc:{en:'Creamy pork-bone ramen.', ko:"진한 돈코츠라멘."},
+    shop:{ en:{query:'tonkotsu ramen kit'}, ko:{naver:"돈코츠라멘 밀키트", coupangUrl:""} } },
+  { id:"udon", emoji:"🍜", spicy:false, noodle:true, price:1, baby:true, family:false,
+    name:{en:'Udon', ko:"우동"}, desc:{en:'Thick chewy noodles in broth.', ko:"쫄깃한 우동."},
+    shop:{ en:{query:'udon noodle kit'}, ko:{naver:"우동 밀키트", coupangUrl:""} } },
+  { id:"soba", emoji:"🍜", spicy:false, noodle:true, price:1, baby:true, family:false,
+    name:{en:'Soba', ko:"소바"}, desc:{en:'Buckwheat noodles, hot or cold.', ko:"담백한 소바."},
+    shop:{ en:{query:'soba buckwheat noodles'}, ko:{naver:"소바", coupangUrl:""} } },
+  { id:"tempura", emoji:"🍤", spicy:false, noodle:false, price:2, baby:true, family:true,
+    name:{en:'Tempura', ko:"튀김"}, desc:{en:'Light crispy battered seafood.', ko:"바삭한 튀김."},
+    shop:{ en:{query:'tempura batter mix'}, ko:{naver:"튀김가루", coupangUrl:""} } },
+  { id:"katsudon", emoji:"🍱", spicy:false, noodle:false, price:2, baby:true, family:false,
+    name:{en:'Katsudon', ko:"가츠동"}, desc:{en:'Pork cutlet over rice with egg.', ko:"든든한 가츠동."},
+    shop:{ en:{query:'katsudon kit'}, ko:{naver:"가츠동 재료", coupangUrl:""} } },
+  { id:"gyudon", emoji:"🍱", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Gyudon', ko:"규동"}, desc:{en:'Simmered beef over rice.', ko:"간편한 규동."},
+    shop:{ en:{query:'gyudon beef bowl'}, ko:{naver:"규동 소스", coupangUrl:""} } },
+  { id:"oyakodon", emoji:"🍱", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Oyakodon', ko:"오야코동"}, desc:{en:'Chicken and egg over rice.', ko:"부드러운 오야코동."},
+    shop:{ en:{query:'oyakodon kit'}, ko:{naver:"오야코동 재료", coupangUrl:""} } },
+  { id:"japcurry", emoji:"🍛", spicy:false, noodle:false, price:1, baby:true, family:true,
+    name:{en:'Japanese Curry', ko:"일본식 카레"}, desc:{en:'Mild, cozy curry over rice.', ko:"순한 일본식 카레."},
+    shop:{ en:{query:'japanese curry roux'}, ko:{naver:"일본식 카레 가루", coupangUrl:""} } },
+  { id:"onigiri", emoji:"🍙", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Onigiri', ko:"오니기리"}, desc:{en:'Filled rice balls.', ko:"간편한 오니기리."},
+    shop:{ en:{query:'onigiri rice ball kit'}, ko:{naver:"삼각김밥 재료", coupangUrl:""} } },
+  { id:"takoyaki", emoji:"🐙", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Takoyaki', ko:"타코야끼"}, desc:{en:'Octopus-filled batter balls.', ko:"쫄깃한 타코야끼."},
+    shop:{ en:{query:'takoyaki pan kit'}, ko:{naver:"타코야끼 믹스", coupangUrl:""} } },
+  { id:"okonomiyaki", emoji:"🥞", spicy:false, noodle:false, price:1, baby:true, family:true,
+    name:{en:'Okonomiyaki', ko:"오코노미야끼"}, desc:{en:'Savory cabbage pancake.', ko:"푸짐한 오코노미야끼."},
+    shop:{ en:{query:'okonomiyaki mix'}, ko:{naver:"오코노미야끼 믹스", coupangUrl:""} } },
+  { id:"yakitori", emoji:"🍢", spicy:false, noodle:false, price:2, baby:true, family:true,
+    name:{en:'Yakitori', ko:"야끼토리"}, desc:{en:'Grilled chicken skewers.', ko:"숯불 야끼토리."},
+    shop:{ en:{query:'yakitori skewers sauce'}, ko:{naver:"야끼토리 소스", coupangUrl:""} } },
+  { id:"gyoza", emoji:"🥟", spicy:false, noodle:false, price:1, baby:true, family:true,
+    name:{en:'Gyoza', ko:"교자"}, desc:{en:'Pan-fried dumplings.', ko:"바삭한 교자."},
+    shop:{ en:{query:'gyoza dumplings'}, ko:{naver:"교자만두", coupangUrl:""} } },
+  { id:"sukiyaki", emoji:"🍲", spicy:false, noodle:false, price:3, baby:true, family:true,
+    name:{en:'Sukiyaki', ko:"스키야키"}, desc:{en:'Sweet soy hot pot.', ko:"달짝지근한 스키야키."},
+    shop:{ en:{query:'sukiyaki kit'}, ko:{naver:"스키야키 밀키트", coupangUrl:""} } },
+  { id:"shabushabu", emoji:"🍲", spicy:false, noodle:false, price:3, baby:true, family:true,
+    name:{en:'Shabu-shabu', ko:"샤브샤브"}, desc:{en:'Thin meat swished in broth.', ko:"개운한 샤브샤브."},
+    shop:{ en:{query:'shabu shabu kit'}, ko:{naver:"샤브샤브 밀키트", coupangUrl:""} } },
+  { id:"unagi", emoji:"🍱", spicy:false, noodle:false, price:3, baby:true, family:false,
+    name:{en:'Unagi Don', ko:"장어덮밥"}, desc:{en:'Grilled eel over rice.', ko:"고소한 장어덮밥."},
+    shop:{ en:{query:'unagi eel sauce'}, ko:{naver:"장어덮밥 소스", coupangUrl:""} } },
+  { id:"teriyakichicken", emoji:"🍗", spicy:false, noodle:false, price:2, baby:true, family:false,
+    name:{en:'Teriyaki Chicken', ko:"데리야끼 치킨"}, desc:{en:'Glazed teriyaki chicken.', ko:"달콤한 데리야끼 치킨."},
+    shop:{ en:{query:'teriyaki chicken sauce'}, ko:{naver:"데리야끼 소스", coupangUrl:""} } },
+  { id:"chirashi", emoji:"🍣", spicy:false, noodle:false, price:3, baby:true, family:false,
+    name:{en:'Chirashi', ko:"치라시"}, desc:{en:'Scattered sashimi over rice.', ko:"화려한 치라시."},
+    shop:{ en:{query:'chirashi sushi kit'}, ko:{naver:"치라시 재료", coupangUrl:""} } },
+  { id:"friedrice", emoji:"🍚", spicy:false, noodle:false, price:1, baby:true, family:true,
+    name:{en:'Fried Rice', ko:"볶음밥"}, desc:{en:'Quick wok-fried rice.', ko:"간단한 볶음밥."},
+    shop:{ en:{query:'fried rice kit'}, ko:{naver:"볶음밥 재료", coupangUrl:""} } },
+  { id:"tangsuyuk", emoji:"🍖", spicy:false, noodle:false, price:2, baby:true, family:true,
+    name:{en:'Sweet & Sour Pork', ko:"탕수육"}, desc:{en:'Crispy pork in sweet sauce.', ko:"바삭한 탕수육."},
+    shop:{ en:{query:'sweet sour pork kit'}, ko:{naver:"탕수육 밀키트", coupangUrl:""} } },
+  { id:"kungpao", emoji:"🌶️", spicy:true, noodle:false, price:2, baby:false, family:false,
+    name:{en:'Kung Pao Chicken', ko:"궁보계정"}, desc:{en:'Spicy chicken with peanuts.', ko:"매콤한 궁보계정."},
+    shop:{ en:{query:'kung pao chicken sauce'}, ko:{naver:"궁보계정 소스", coupangUrl:""} } },
+  { id:"malaxiangguo", emoji:"🌶️", spicy:true, noodle:false, price:2, baby:false, family:true,
+    name:{en:'Mala Xiang Guo', ko:"마라샹궈"}, desc:{en:'Numbing-spicy stir-fry.', ko:"얼얼한 마라샹궈."},
+    shop:{ en:{query:'mala xiang guo sauce'}, ko:{naver:"마라샹궈 밀키트", coupangUrl:""} } },
+  { id:"malatang", emoji:"🌶️", spicy:true, noodle:true, price:1, baby:false, family:false,
+    name:{en:'Malatang', ko:"마라탕"}, desc:{en:'Spicy hot soup, pick your own.', ko:"골라 먹는 마라탕."},
+    shop:{ en:{query:'malatang soup base'}, ko:{naver:"마라탕 재료", coupangUrl:""} } },
+  { id:"dimsum", emoji:"🥟", spicy:false, noodle:false, price:2, baby:true, family:true,
+    name:{en:'Dim Sum', ko:"딤섬"}, desc:{en:'Assorted steamed bites.', ko:"다양한 딤섬."},
+    shop:{ en:{query:'dim sum assortment'}, ko:{naver:"딤섬", coupangUrl:""} } },
+  { id:"chowmein", emoji:"🍜", spicy:false, noodle:true, price:1, baby:true, family:false,
+    name:{en:'Chow Mein', ko:"차우멘"}, desc:{en:'Stir-fried noodles.', ko:"고소한 차우멘."},
+    shop:{ en:{query:'chow mein noodle kit'}, ko:{naver:"차우멘", coupangUrl:""} } },
+  { id:"beefnoodlesoup", emoji:"🍜", spicy:true, noodle:true, price:2, baby:false, family:true,
+    name:{en:'Beef Noodle Soup', ko:"우육면"}, desc:{en:'Braised beef noodle soup.', ko:"진한 우육면."},
+    shop:{ en:{query:'beef noodle soup kit'}, ko:{naver:"우육면 밀키트", coupangUrl:""} } },
+  { id:"wontonsoup", emoji:"🥣", spicy:false, noodle:true, price:1, baby:true, family:false,
+    name:{en:'Wonton Soup', ko:"완탕면"}, desc:{en:'Wontons in clear broth.', ko:"담백한 완탕면."},
+    shop:{ en:{query:'wonton soup kit'}, ko:{naver:"완탕면", coupangUrl:""} } },
+  { id:"pekingduck", emoji:"🦆", spicy:false, noodle:false, price:3, baby:true, family:true,
+    name:{en:'Peking Duck', ko:"베이징덕"}, desc:{en:'Crispy duck with pancakes.', ko:"바삭한 베이징덕."},
+    shop:{ en:{query:'peking duck kit'}, ko:{naver:"오리고기", coupangUrl:""} } },
+  { id:"springrolls", emoji:"🥟", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Spring Rolls', ko:"춘권"}, desc:{en:'Crispy fried rolls.', ko:"바삭한 춘권."},
+    shop:{ en:{query:'spring roll wrappers'}, ko:{naver:"춘권피", coupangUrl:""} } },
+  { id:"eggplantgarlic", emoji:"🍆", spicy:true, noodle:false, price:1, baby:false, family:false,
+    name:{en:'Garlic Eggplant', ko:"어향가지"}, desc:{en:'Spicy garlic eggplant.', ko:"매콤한 어향가지."},
+    shop:{ en:{query:'fish fragrant eggplant sauce'}, ko:{naver:"어향가지 소스", coupangUrl:""} } },
+  { id:"tomatopasta", emoji:"🍝", spicy:false, noodle:true, price:2, baby:true, family:true,
+    name:{en:'Tomato Pasta', ko:"토마토 파스타"}, desc:{en:'Simple comforting tomato pasta.', ko:"든든한 토마토 파스타."},
+    shop:{ en:{query:'pasta tomato sauce'}, ko:{naver:"파스타 토마토소스", coupangUrl:""} } },
+  { id:"carbonara", emoji:"🍝", spicy:false, noodle:true, price:2, baby:true, family:false,
+    name:{en:'Carbonara', ko:"까르보나라"}, desc:{en:'Creamy egg and bacon pasta.', ko:"진한 까르보나라."},
+    shop:{ en:{query:'carbonara pasta kit'}, ko:{naver:"까르보나라 소스", coupangUrl:""} } },
+  { id:"aglioolio", emoji:"🍝", spicy:false, noodle:true, price:2, baby:true, family:false,
+    name:{en:'Aglio e Olio', ko:"알리오 올리오"}, desc:{en:'Garlic and olive oil pasta.', ko:"담백한 알리오 올리오."},
+    shop:{ en:{query:'spaghetti olive oil garlic'}, ko:{naver:"스파게티 면", coupangUrl:""} } },
+  { id:"lasagna", emoji:"🍝", spicy:false, noodle:false, price:2, baby:true, family:true,
+    name:{en:'Lasagna', ko:"라자냐"}, desc:{en:'Layered baked pasta.', ko:"치즈 가득 라자냐."},
+    shop:{ en:{query:'lasagna sheets sauce'}, ko:{naver:"라자냐 재료", coupangUrl:""} } },
+  { id:"margherita", emoji:"🍕", spicy:false, noodle:false, price:2, baby:true, family:true,
+    name:{en:'Margherita Pizza', ko:"마르게리타 피자"}, desc:{en:'Tomato, mozzarella, basil.', ko:"클래식 마르게리타."},
+    shop:{ en:{query:'margherita pizza kit'}, ko:{naver:"화덕피자", coupangUrl:""} } },
+  { id:"pepperoni", emoji:"🍕", spicy:false, noodle:false, price:2, baby:true, family:true,
+    name:{en:'Pepperoni Pizza', ko:"페퍼로니 피자"}, desc:{en:'Classic pepperoni pizza.', ko:"페퍼로니 피자."},
+    shop:{ en:{query:'pepperoni pizza kit'}, ko:{naver:"냉동피자", coupangUrl:""} } },
+  { id:"risotto", emoji:"🍚", spicy:false, noodle:false, price:2, baby:true, family:false,
+    name:{en:'Risotto', ko:"리조또"}, desc:{en:'Creamy Italian rice.', ko:"크리미한 리조또."},
+    shop:{ en:{query:'arborio rice risotto'}, ko:{naver:"리조또 쌀", coupangUrl:""} } },
+  { id:"gnocchi", emoji:"🥟", spicy:false, noodle:false, price:2, baby:true, family:false,
+    name:{en:'Gnocchi', ko:"뇨끼"}, desc:{en:'Soft potato dumplings.', ko:"쫄깃한 감자 뇨끼."},
+    shop:{ en:{query:'potato gnocchi'}, ko:{naver:"감자 뇨끼", coupangUrl:""} } },
+  { id:"cheeseburger", emoji:"🍔", spicy:false, noodle:false, price:1, baby:true, family:true,
+    name:{en:'Cheeseburger', ko:"치즈버거"}, desc:{en:'Juicy beef with cheese.', ko:"육즙 가득 치즈버거."},
+    shop:{ en:{query:'cheeseburger kit'}, ko:{naver:"수제버거 패티", coupangUrl:""} } },
+  { id:"hotdog", emoji:"🌭", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Hot Dog', ko:"핫도그"}, desc:{en:'Grilled sausage in a bun.', ko:"간단한 핫도그."},
+    shop:{ en:{query:'hot dog buns sausage'}, ko:{naver:"핫도그", coupangUrl:""} } },
+  { id:"steak", emoji:"🥩", spicy:false, noodle:false, price:3, baby:true, family:true,
+    name:{en:'Steak', ko:"스테이크"}, desc:{en:'Seared juicy beef steak.', ko:"육즙 가득 스테이크."},
+    shop:{ en:{query:'ribeye steak'}, ko:{naver:"스테이크 고기", coupangUrl:""} } },
+  { id:"roastchicken", emoji:"🍗", spicy:false, noodle:false, price:2, baby:true, family:true,
+    name:{en:'Roast Chicken', ko:"로스트 치킨"}, desc:{en:'Oven-roasted whole chicken.', ko:"노릇한 로스트 치킨."},
+    shop:{ en:{query:'whole roasting chicken'}, ko:{naver:"통닭", coupangUrl:""} } },
+  { id:"macncheese", emoji:"🧀", spicy:false, noodle:true, price:1, baby:true, family:true,
+    name:{en:'Mac & Cheese', ko:"맥앤치즈"}, desc:{en:'Cheesy baked macaroni.', ko:"진한 맥앤치즈."},
+    shop:{ en:{query:'mac and cheese kit'}, ko:{naver:"맥앤치즈", coupangUrl:""} } },
+  { id:"caesarsalad", emoji:"🥗", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Caesar Salad', ko:"시저 샐러드"}, desc:{en:'Crisp romaine with dressing.', ko:"상큼한 시저 샐러드."},
+    shop:{ en:{query:'caesar salad kit'}, ko:{naver:"시저 샐러드", coupangUrl:""} } },
+  { id:"grilledcheese", emoji:"🧀", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Grilled Cheese', ko:"그릴드 치즈"}, desc:{en:'Toasted cheese sandwich.', ko:"고소한 그릴드 치즈."},
+    shop:{ en:{query:'grilled cheese bread'}, ko:{naver:"식빵 슬라이스 치즈", coupangUrl:""} } },
+  { id:"fishandchips", emoji:"🍟", spicy:false, noodle:false, price:2, baby:true, family:true,
+    name:{en:'Fish & Chips', ko:"피시앤칩스"}, desc:{en:'Battered fish with fries.', ko:"바삭한 피시앤칩스."},
+    shop:{ en:{query:'fish and chips batter'}, ko:{naver:"피시앤칩스", coupangUrl:""} } },
+  { id:"clubsandwich", emoji:"🥪", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Club Sandwich', ko:"클럽 샌드위치"}, desc:{en:'Stacked deli sandwich.', ko:"든든한 클럽 샌드위치."},
+    shop:{ en:{query:'club sandwich kit'}, ko:{naver:"샌드위치 재료", coupangUrl:""} } },
+  { id:"omelette", emoji:"🍳", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Omelette', ko:"오믈렛"}, desc:{en:'Fluffy folded eggs.', ko:"폭신한 오믈렛."},
+    shop:{ en:{query:'omelette eggs'}, ko:{naver:"계란", coupangUrl:""} } },
+  { id:"pancakes", emoji:"🥞", spicy:false, noodle:false, price:1, baby:true, family:true,
+    name:{en:'Pancakes', ko:"팬케이크"}, desc:{en:'Fluffy stacked pancakes.', ko:"폭신한 팬케이크."},
+    shop:{ en:{query:'pancake mix'}, ko:{naver:"팬케이크 믹스", coupangUrl:""} } },
+  { id:"frenchtoast", emoji:"🍞", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'French Toast', ko:"프렌치토스트"}, desc:{en:'Custardy griddled bread.', ko:"달콤한 프렌치토스트."},
+    shop:{ en:{query:'french toast bread'}, ko:{naver:"식빵", coupangUrl:""} } },
+  { id:"tacos", emoji:"🌮", spicy:true, noodle:false, price:1, baby:true, family:true,
+    name:{en:'Tacos', ko:"타코"}, desc:{en:'Soft tortillas with fillings.', ko:"다양한 속의 타코."},
+    shop:{ en:{query:'taco kit'}, ko:{naver:"타코 키트", coupangUrl:""} } },
+  { id:"burrito", emoji:"🌯", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Burrito', ko:"부리또"}, desc:{en:'Stuffed wrapped tortilla.', ko:"푸짐한 부리또."},
+    shop:{ en:{query:'burrito kit'}, ko:{naver:"부리또 또띠야", coupangUrl:""} } },
+  { id:"quesadilla", emoji:"🫓", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Quesadilla', ko:"케사디야"}, desc:{en:'Grilled cheesy tortilla.', ko:"고소한 케사디야."},
+    shop:{ en:{query:'quesadilla tortilla cheese'}, ko:{naver:"또띠야 치즈", coupangUrl:""} } },
+  { id:"nachos", emoji:"🧀", spicy:false, noodle:false, price:1, baby:true, family:true,
+    name:{en:'Nachos', ko:"나초"}, desc:{en:'Chips with cheese and salsa.', ko:"치즈 듬뿍 나초."},
+    shop:{ en:{query:'nachos chips salsa'}, ko:{naver:"나초 살사", coupangUrl:""} } },
+  { id:"fajitas", emoji:"🌮", spicy:true, noodle:false, price:2, baby:false, family:true,
+    name:{en:'Fajitas', ko:"파히타"}, desc:{en:'Sizzling spiced meat and peppers.', ko:"매콤한 파히타."},
+    shop:{ en:{query:'fajita seasoning kit'}, ko:{naver:"파히타 시즈닝", coupangUrl:""} } },
+  { id:"padthai", emoji:"🍜", spicy:false, noodle:true, price:1, baby:true, family:false,
+    name:{en:'Pad Thai', ko:"팟타이"}, desc:{en:'Sweet-savory stir-fried noodles.', ko:"새콤달콤 팟타이."},
+    shop:{ en:{query:'pad thai kit'}, ko:{naver:"팟타이 밀키트", coupangUrl:""} } },
+  { id:"pho", emoji:"🍜", spicy:false, noodle:true, price:1, baby:true, family:false,
+    name:{en:'Pho', ko:"쌀국수"}, desc:{en:'Vietnamese beef noodle soup.', ko:"시원한 쌀국수."},
+    shop:{ en:{query:'pho noodle soup kit'}, ko:{naver:"쌀국수 밀키트", coupangUrl:""} } },
+  { id:"banhmi", emoji:"🥖", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Banh Mi', ko:"반미"}, desc:{en:'Crusty Vietnamese sandwich.', ko:"바삭한 반미."},
+    shop:{ en:{query:'banh mi kit'}, ko:{naver:"반미 재료", coupangUrl:""} } },
+  { id:"greencurry", emoji:"🍛", spicy:true, noodle:false, price:2, baby:false, family:false,
+    name:{en:'Green Curry', ko:"그린 커리"}, desc:{en:'Coconut-rich Thai green curry.', ko:"향긋한 그린 커리."},
+    shop:{ en:{query:'thai green curry paste'}, ko:{naver:"그린커리 페이스트", coupangUrl:""} } },
+  { id:"tomyum", emoji:"🍲", spicy:true, noodle:true, price:2, baby:false, family:false,
+    name:{en:'Tom Yum', ko:"똠얌꿍"}, desc:{en:'Hot-and-sour shrimp soup.', ko:"새콤매콤 똠얌꿍."},
+    shop:{ en:{query:'tom yum paste'}, ko:{naver:"똠얌꿍 페이스트", coupangUrl:""} } },
+  { id:"nasigoreng", emoji:"🍚", spicy:true, noodle:false, price:1, baby:false, family:false,
+    name:{en:'Nasi Goreng', ko:"나시고렝"}, desc:{en:'Indonesian spiced fried rice.', ko:"매콤한 나시고렝."},
+    shop:{ en:{query:'nasi goreng paste'}, ko:{naver:"나시고렝 소스", coupangUrl:""} } },
+  { id:"laksa", emoji:"🍜", spicy:true, noodle:true, price:2, baby:false, family:false,
+    name:{en:'Laksa', ko:"락사"}, desc:{en:'Spicy coconut noodle soup.', ko:"진한 락사."},
+    shop:{ en:{query:'laksa paste kit'}, ko:{naver:"락사 페이스트", coupangUrl:""} } },
+  { id:"satay", emoji:"🍢", spicy:false, noodle:false, price:2, baby:true, family:false,
+    name:{en:'Satay', ko:"사테"}, desc:{en:'Grilled skewers with peanut sauce.', ko:"고소한 사테."},
+    shop:{ en:{query:'satay peanut sauce'}, ko:{naver:"사테 소스", coupangUrl:""} } },
+  { id:"buncha", emoji:"🍜", spicy:false, noodle:true, price:1, baby:true, family:false,
+    name:{en:'Bun Cha', ko:"분짜"}, desc:{en:'Grilled pork with noodles.', ko:"향긋한 분짜."},
+    shop:{ en:{query:'bun cha kit'}, ko:{naver:"분짜 밀키트", coupangUrl:""} } },
+  { id:"butterchicken", emoji:"🍛", spicy:false, noodle:false, price:2, baby:true, family:true,
+    name:{en:'Butter Chicken', ko:"버터 치킨"}, desc:{en:'Mild creamy tomato curry.', ko:"부드러운 버터 치킨."},
+    shop:{ en:{query:'butter chicken sauce'}, ko:{naver:"버터치킨 소스", coupangUrl:""} } },
+  { id:"chickencurry", emoji:"🍛", spicy:true, noodle:false, price:2, baby:false, family:true,
+    name:{en:'Chicken Curry', ko:"치킨 커리"}, desc:{en:'Spiced Indian chicken curry.', ko:"매콤한 치킨 커리."},
+    shop:{ en:{query:'indian chicken curry kit'}, ko:{naver:"인도 커리 소스", coupangUrl:""} } },
+  { id:"biryani", emoji:"🍚", spicy:true, noodle:false, price:2, baby:false, family:true,
+    name:{en:'Biryani', ko:"비리야니"}, desc:{en:'Fragrant spiced rice.', ko:"향신료 가득 비리야니."},
+    shop:{ en:{query:'biryani kit'}, ko:{naver:"비리야니 키트", coupangUrl:""} } },
+  { id:"tikkamasala", emoji:"🍛", spicy:true, noodle:false, price:2, baby:false, family:false,
+    name:{en:'Tikka Masala', ko:"티카 마살라"}, desc:{en:'Creamy spiced chicken curry.', ko:"진한 티카 마살라."},
+    shop:{ en:{query:'tikka masala sauce'}, ko:{naver:"티카마살라 소스", coupangUrl:""} } },
+  { id:"dal", emoji:"🍲", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Dal', ko:"달 커리"}, desc:{en:'Comforting lentil curry.', ko:"담백한 달 커리."},
+    shop:{ en:{query:'dal lentil curry kit'}, ko:{naver:"렌틸 커리", coupangUrl:""} } },
+  { id:"samosa", emoji:"🥟", spicy:true, noodle:false, price:1, baby:false, family:false,
+    name:{en:'Samosa', ko:"사모사"}, desc:{en:'Spiced fried pastry.', ko:"바삭한 사모사."},
+    shop:{ en:{query:'samosa kit'}, ko:{naver:"사모사", coupangUrl:""} } },
+  { id:"pokebowl", emoji:"🍣", spicy:false, noodle:false, price:2, baby:true, family:false,
+    name:{en:'Poke Bowl', ko:"포케"}, desc:{en:'Fresh fish rice bowl.', ko:"신선한 포케."},
+    shop:{ en:{query:'poke bowl kit'}, ko:{naver:"포케 재료", coupangUrl:""} } },
+  { id:"bagel", emoji:"🥯", spicy:false, noodle:false, price:1, baby:true, family:false,
+    name:{en:'Bagel Sandwich', ko:"베이글"}, desc:{en:'Toasted bagel with cream cheese.', ko:"쫄깃한 베이글."},
+    shop:{ en:{query:'bagel cream cheese'}, ko:{naver:"베이글", coupangUrl:""} } },
+  { id:"salmonsteak", emoji:"🐟", spicy:false, noodle:false, price:2, baby:true, family:false,
+    name:{en:'Salmon Steak', ko:"연어 스테이크"}, desc:{en:'Pan-seared salmon.', ko:"담백한 연어 스테이크."},
+    shop:{ en:{query:'fresh salmon fillet'}, ko:{naver:"생연어", coupangUrl:""} } },
+];
+
+/* ============================================================================
+   3) QUESTION POOL  —  3 picked at random each visit
+   ============================================================================ */
+const QUESTIONS = [
+  { id:"spicy", kind:"ox", q:{en:"In the mood for something spicy?", ko:"매운 음식 먹고 싶어요?"},
+    options:[{label:{en:"Yes",ko:"네"},ox:"O",filter:d=>d.spicy===true},
+             {label:{en:"No",ko:"아니요"},ox:"X",filter:d=>d.spicy===false}]},
+  { id:"noodle", kind:"ox", q:{en:"Are noodles okay?", ko:"면 요리 괜찮아요?"},
+    options:[{label:{en:"Sure",ko:"좋아요"},ox:"O",filter:()=>true},
+             {label:{en:"No noodles",ko:"면 말고"},ox:"X",filter:d=>d.noodle===false}]},
+  { id:"price", kind:"choice", q:{en:"What's your budget?", ko:"가격대는 어느 정도?"},
+    options:[{label:{en:"Cheap",ko:"저렴하게"},filter:d=>d.price<=1},
+             {label:{en:"Mid",ko:"보통"},filter:d=>d.price<=2},
+             {label:{en:"Treat",ko:"넉넉하게"},filter:()=>true}]},
+  { id:"family", kind:"choice", q:{en:"How many are eating?", ko:"몇 명이 먹어요?"},
+    options:[{label:{en:"Just me",ko:"혼자"},filter:()=>true},
+             {label:{en:"Two",ko:"둘이"},filter:()=>true},
+             {label:{en:"3-4",ko:"3~4명"},filter:d=>d.family===true},
+             {label:{en:"5+",ko:"5명 이상"},filter:d=>d.family===true}]},
+  { id:"baby", kind:"ox", q:{en:"Any little kids at the table?", ko:"같이 먹는 아기가 있나요?"},
+    options:[{label:{en:"Yes",ko:"네"},ox:"O",filter:d=>d.baby===true},
+             {label:{en:"No",ko:"아니요"},ox:"X",filter:()=>true}]},
+  { id:"effort", kind:"ox", q:{en:"Cooking tonight, or ordering in?", ko:"직접 요리할까요, 시켜 먹을까요?"},
+    options:[{label:{en:"Cook",ko:"요리"},ox:"O",filter:()=>true},
+             {label:{en:"Order in",ko:"배달"},ox:"X",filter:()=>true,mode:"order"}]},
+  { id:"warmth", kind:"ox", q:{en:"Want something warm?", ko:"따뜻한 게 좋아요?"},
+    options:[{label:{en:"Warm",ko:"따뜻하게"},ox:"O",filter:d=>!["naengmyeon","kongguksu","sashimi","caesarsalad","pokebowl","bagel"].includes(d.id)},
+             {label:{en:"Either",ko:"상관없어요"},ox:"X",filter:()=>true}]},
+];
+
+/* ============================================================================
+   4) UI STRINGS
+   ============================================================================ */
+const STR = {
+  brand:{en:"What's for tomorrow?", ko:"내일 뭐먹지?"},
+  heroTitle:{en:"Can't decide? We've got you.", ko:"고민 마, 우리가 정해줄게"},
+  heroSub:{en:"One tap for a random pick — or a few quick taps to narrow it down.",
+           ko:"한 번 누르면 랜덤 추천, 더 좁히고 싶으면 몇 번 더 탭."},
+  surprise:{en:"Surprise me", ko:"아무거나 추천!"},
+  orPick:{en:"or answer 3 quick questions", ko:"또는 3가지 질문에 답하기"},
+  stepLabel:{en:"Question", ko:"질문"},
+  back:{en:"\u2190 Back", ko:"\u2190 이전"},
+  resultKicker:{en:"Tomorrow, eat", ko:"내일은 이거"},
+  shopCook:{en:"Get the ingredients", ko:"재료 사러 가기"},
+  shopOrder:{en:"Order it now", ko:"지금 주문하기"},
+  again:{en:"Pick again", ko:"다시 추천"},
+  restart:{en:"Start over", ko:"처음부터"},
+  go:{en:"Shop \u2192", ko:"구매 \u2192"},
+  goOrder:{en:"Order \u2192", ko:"주문 \u2192"},
+  affNote:{en:"Some links above are affiliate links.", ko:"위 링크 일부는 제휴 링크입니다."},
+  contact:{en:"Contact", ko:"문의하기"},
+  disclosure:{en:"As an Amazon Associate and affiliate partner, this site earns from qualifying purchases. Recommendations may include affiliate links.",
+              ko:"이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다."},
+};
+
+/* ============================================================================
+   5) TRACKING  (works with GoatCounter / GA4 if loaded; no-ops otherwise)
+   ============================================================================ */
+function track(name){
+  try{
+    if(window.goatcounter && window.goatcounter.count){
+      window.goatcounter.count({path:"event/"+name, title:name, event:true});
+    }
+    if(typeof gtag==="function"){ gtag("event", name); }
+  }catch(e){}
+}
+
+/* ============================================================================
+   6) APP LOGIC
+   ============================================================================ */
+const state = { lang:"en", step:0, answers:[], picked:[], mode:"cook", view:"quiz" };
+let lastDish = null;
+const panel = document.getElementById("panel");
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function L(o){return o[state.lang];}
+
+function newQuiz(){
+  state.step=0; state.answers=[]; state.mode="cook"; state.view="quiz";
+  state.picked=shuffle(QUESTIONS).slice(0,3);
+  renderQuestion();
+}
+function renderQuestion(){
+  state.view="quiz";
+  const Q=state.picked[state.step];
+  const dots=state.picked.map((_,i)=>{const c=i<state.step?"done":(i===state.step?"now":"");return '<span class="'+c+'"></span>';}).join("");
+  const opts=Q.options.map((o,i)=>{
+    const cls="opt"+(Q.kind==="ox"?" ox":"");
+    const txt=Q.kind==="ox"?o.ox:L(o.label);
+    const sub=Q.kind==="ox"?'<div style="font-size:12px;font-weight:500;color:var(--ink-2);margin-top:4px">'+L(o.label)+'</div>':"";
+    return '<button class="'+cls+'" data-i="'+i+'">'+txt+sub+'</button>';
+  }).join("");
+  panel.innerHTML='<div class="dots">'+dots+'</div>'+
+    '<div class="step-label">'+L(STR.stepLabel)+' '+(state.step+1)+' / 3</div>'+
+    '<div class="question">'+L(Q.q)+'</div>'+
+    '<div class="options">'+opts+'</div>'+
+    (state.step>0?'<button class="back" id="back">'+L(STR.back)+'</button>':"");
+  panel.querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>answer(+b.dataset.i)));
+  const back=document.getElementById("back");
+  if(back) back.addEventListener("click",()=>{state.step--;state.answers.pop();renderQuestion();});
+}
+function answer(i){
+  const Q=state.picked[state.step]; const opt=Q.options[i];
+  state.answers.push({q:Q,opt});
+  if(opt.mode==="order") state.mode="order";
+  track("answer-"+Q.id);
+  if(state.step<2){state.step++;renderQuestion();}
+  else{showResult(computeResult());}
+}
+function computeResult(){
+  let pool=DISHES.slice();
+  state.answers.forEach(({opt})=>{const n=pool.filter(opt.filter);if(n.length)pool=n;});
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function buildLinks(dish){
+  const order=state.mode==="order";
+  if(state.lang==="en"){
+    const q=encodeURIComponent(dish.shop.en.query);
+    const amazon=AFFILIATE.amazonHost+"?k="+q+"&tag="+AFFILIATE.amazonTag;
+    return [{retailer:"Amazon",url:amazon}];
+  } else {
+    const q=encodeURIComponent(dish.shop.ko.naver);
+    const naver=AFFILIATE.naverSearch+"?query="+q;
+    const coupang=dish.shop.ko.coupangUrl?dish.shop.ko.coupangUrl:AFFILIATE.coupangSearch+"?q="+q;
+    if(order) return [{retailer:"쿠팡이츠",url:AFFILIATE.coupangEats,order:true},{retailer:"네이버",url:naver}];
+    return [{retailer:"쿠팡",url:coupang},{retailer:"네이버",url:naver}];
+  }
+}
+function showResult(dish){
+  lastDish=dish; state.view="result";
+  const chips=state.answers.map(({q,opt})=>'<span class="chip">'+L(opt.label)+'</span>').join("");
+  const links=buildLinks(dish).map(l=>{
+    const label=(l.order&&l.retailer==="쿠팡이츠")?L(STR.goOrder):L(STR.go);
+    return '<a class="shop-link" href="'+l.url+'" target="_blank" rel="nofollow sponsored noopener" data-shop="'+l.retailer+'" data-dish="'+dish.id+'">'+
+           '<span>'+l.retailer+'</span><span class="go">'+label+'</span></a>';
+  }).join("");
+  panel.innerHTML='<div class="reveal"><div class="dish-emoji">'+dish.emoji+'</div>'+
+    '<div class="result-kicker">'+L(STR.resultKicker)+'</div>'+
+    '<div class="dish-name">'+L(dish.name)+'</div>'+
+    '<div class="dish-desc">'+L(dish.desc)+'</div>'+
+    '<div class="chips">'+chips+'</div>'+
+    '<div class="shop"><div class="shop-title">'+(state.mode==="order"?L(STR.shopOrder):L(STR.shopCook))+'</div>'+
+    '<div class="shop-links">'+links+'</div>'+
+    '<div class="aff-note">'+L(STR.affNote)+'</div></div>'+
+    '<div class="result-actions"><button class="btn-ghost" id="again">'+L(STR.again)+'</button>'+
+    '<button class="btn-ghost" id="restart">'+L(STR.restart)+'</button></div></div>';
+  panel.querySelectorAll(".shop-link").forEach(a=>a.addEventListener("click",()=>track("shop-"+a.dataset.shop+"-"+a.dataset.dish)));
+  document.getElementById("again").addEventListener("click",()=>{track("again");showResult(computeResult());});
+  document.getElementById("restart").addEventListener("click",()=>{track("restart");newQuiz();});
+}
+function surprise(){state.mode="cook";state.answers=[];track("surprise");showResult(DISHES[Math.floor(Math.random()*DISHES.length)]);}
+function setLang(lang){
+  state.lang=lang; document.documentElement.lang=lang;
+  document.getElementById("lang-en").setAttribute("aria-pressed",lang==="en");
+  document.getElementById("lang-ko").setAttribute("aria-pressed",lang==="ko");
+  document.querySelectorAll("[data-t]").forEach(el=>{const k=el.getAttribute("data-t");if(STR[k])el.textContent=L(STR[k]);});
+  if(state.view==="result"&&lastDish)showResult(lastDish); else renderQuestion();
+}
+document.getElementById("lang-en").addEventListener("click",()=>setLang("en"));
+document.getElementById("lang-ko").addEventListener("click",()=>setLang("ko"));
+document.getElementById("surprise").addEventListener("click",surprise);
+document.getElementById("home").addEventListener("click",()=>track("onlyone_click"));
+// Contact -> opens the user's email app addressed to the site owner
+document.getElementById("contact").addEventListener("click",function(e){
+  e.preventDefault();
+  track("contact");
+  var subject = state.lang==="ko" ? "[내일 뭐먹지?] 문의" : "[What's for tomorrow?] Inquiry";
+  window.location.href = "mailto:onlyonecorpceo@gmail.com?subject=" + encodeURIComponent(subject);
+});
+newQuiz();
+</script>
+
+<!-- =========================================================================
+     ANALYTICS — Google Analytics 4
+     Replace G-XXXXXXXXXX (in BOTH lines) with your GA4 Measurement ID.
+     Pageviews are tracked automatically; the track() function above also
+     forwards click events (surprise / answer / shop / contact) to GA4.
+     ========================================================================= -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
+
+<!-- (Alternative, not used) GoatCounter — left commented out
+<script data-goatcounter="https://YOURCODE.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+-->
+</body>
+</html>
