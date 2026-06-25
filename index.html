@@ -1,17 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-  <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0LDKZRJ6V"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-H0LDKZRJ6V');
-</script>
-  
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>내일 뭐먹지?</title>
@@ -94,6 +83,19 @@
   .footer-contact{margin-top:10px}
   .footer-contact a{font-size:12px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--hair);padding-bottom:1px}
   .footer-contact a:hover{color:var(--accent);border-color:var(--accent)}
+  .consent{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:50;
+    width:calc(100% - 28px);max-width:540px;background:var(--surface);border:1px solid var(--hair);
+    border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;display:none}
+  .consent.show{display:block;animation:rise .4s cubic-bezier(.2,.8,.2,1)}
+  .consent p{font-size:13px;color:var(--ink-2);line-height:1.5}
+  .consent p a{color:var(--ink);text-decoration:underline}
+  .consent-actions{display:flex;gap:10px;margin-top:14px}
+  .consent-actions button{flex:1;font-size:14px;font-weight:600;border-radius:999px;padding:11px 16px;transition:all .15s ease}
+  .consent-actions button:active{transform:scale(.97)}
+  .c-accept{background:var(--accent);color:#fff}
+  .c-accept:hover{background:var(--accent-press)}
+  .c-decline{background:var(--bg);border:1px solid var(--hair);color:var(--ink)}
+  .c-decline:hover{border-color:var(--ink-2)}
   @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
 </style>
 </head>
@@ -133,6 +135,15 @@
     <p data-t="disclosure">As an Amazon Associate and affiliate partner, this site earns from qualifying purchases. Recommendations may include affiliate links.</p>
     <div class="footer-contact"><a id="contact" href="#" data-t="contact">Contact</a></div>
   </footer>
+
+  <div class="consent" id="consent" role="dialog" aria-live="polite">
+    <p data-t="consentMsg">We use cookies for analytics and ad measurement. EEA visitors can choose below.
+      <a id="consent-contact" href="#" data-t="consentLink">Contact</a></p>
+    <div class="consent-actions">
+      <button class="c-decline" id="c-decline" data-t="consentDecline">Decline</button>
+      <button class="c-accept" id="c-accept" data-t="consentAccept">Accept</button>
+    </div>
+  </div>
 
 <script>
 /* ============================================================================
@@ -586,6 +597,11 @@ const STR = {
   goOrder:{en:"Order \u2192", ko:"주문 \u2192"},
   affNote:{en:"Some links above are affiliate links.", ko:"위 링크 일부는 제휴 링크입니다."},
   contact:{en:"Contact", ko:"문의하기"},
+  consentMsg:{en:"We use cookies for analytics and ad measurement. Visitors in the EEA can choose below.",
+              ko:"분석 및 광고 측정을 위해 쿠키를 사용합니다. 동의 여부를 선택해 주세요."},
+  consentLink:{en:"Privacy / Contact", ko:"개인정보 / 문의"},
+  consentAccept:{en:"Accept", ko:"동의"},
+  consentDecline:{en:"Decline", ko:"거부"},
   disclosure:{en:"As an Amazon Associate and affiliate partner, this site earns from qualifying purchases. Recommendations may include affiliate links.",
               ko:"이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다."},
 };
@@ -696,6 +712,29 @@ document.getElementById("lang-en").addEventListener("click",()=>setLang("en"));
 document.getElementById("lang-ko").addEventListener("click",()=>setLang("ko"));
 document.getElementById("surprise").addEventListener("click",surprise);
 document.getElementById("home").addEventListener("click",()=>track("onlyone_click"));
+// ---- Consent Mode v2 banner (EEA) ----
+function setConsent(granted){
+  try{ localStorage.setItem("oo_consent", granted?"granted":"denied"); }catch(e){}
+  if(typeof gtag==="function"){
+    gtag("consent","update",{
+      "ad_storage":granted?"granted":"denied",
+      "ad_user_data":granted?"granted":"denied",
+      "ad_personalization":granted?"granted":"denied",
+      "analytics_storage":granted?"granted":"denied"
+    });
+  }
+  document.getElementById("consent").classList.remove("show");
+  track(granted?"consent_accept":"consent_decline");
+}
+(function(){ var s; try{ s=localStorage.getItem("oo_consent"); }catch(e){}
+  if(!s) document.getElementById("consent").classList.add("show"); })();
+document.getElementById("c-accept").addEventListener("click",()=>setConsent(true));
+document.getElementById("c-decline").addEventListener("click",()=>setConsent(false));
+document.getElementById("consent-contact").addEventListener("click",function(e){
+  e.preventDefault();
+  var subject = state.lang==="ko" ? "[내일 뭐먹지?] 문의" : "[What's for tomorrow?] Inquiry";
+  window.location.href = "mailto:onlyonecorpceo@gmail.com?subject=" + encodeURIComponent(subject);
+});
 // Contact -> opens the user's email app addressed to the site owner
 document.getElementById("contact").addEventListener("click",function(e){
   e.preventDefault();
@@ -712,13 +751,30 @@ newQuiz();
      Pageviews are tracked automatically; the track() function above also
      forwards click events (surprise / answer / shop / contact) to GA4.
      ========================================================================= -->
-<!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-H0LDKZRJ6V"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
+  // Consent Mode v2 — default everything to DENIED (covers EEA) until the visitor opts in
+  gtag('consent', 'default', {
+    'ad_storage':'denied',
+    'ad_user_data':'denied',
+    'ad_personalization':'denied',
+    'analytics_storage':'denied',
+    'wait_for_update':500
+  });
+  // Re-apply a returning visitor's prior choice (set by the banner)
+  try{
+    if(localStorage.getItem('oo_consent')==='granted'){
+      gtag('consent','update',{
+        'ad_storage':'granted','ad_user_data':'granted',
+        'ad_personalization':'granted','analytics_storage':'granted'
+      });
+    }
+  }catch(e){}
   gtag('js', new Date());
-  gtag('config', 'G-XXXXXXXXXX');
-</script> -->
+  gtag('config', 'G-H0LDKZRJ6V');
+</script>
 
 <!-- (Alternative, not used) GoatCounter — left commented out
 <script data-goatcounter="https://YOURCODE.goatcounter.com/count"
@@ -726,3 +782,4 @@ newQuiz();
 -->
 </body>
 </html>
+
